@@ -1,18 +1,45 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+const  createError = require('http-errors');
+const  express = require('express');
+const  path = require('path');
+const  cookieParser = require('cookie-parser');
+const  logger = require('morgan');
+const passport = require('passport');
+const localStrategy = require("passport-local").Strategy
+const session = require("express-session");
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+const  indexRouter = require('./routes/index');
+const  usersRouter = require('./routes/users');
+
+// import des modeles
+const User = require("./models/User");
 
 const { initDB } = require('./config/database');
 
-var app = express();
+const  app = express();
 
 // Initialisation de la base de donnée
 initDB();
+
+// Configuration de la session
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+}));
+
+// initialisation du passport qui va géré l'authentification
+// initialisation de passport
+app.use(passport.initialize());
+// sert a utiliser les sessions avec passport
+app.use(passport.session());
+
+// Utilisation de la stratégie locale de passeport
+passport.use(new localStrategy(User.authenticate()));
+
+// sérialisation et deserialisation de l'utilisateur. c'est une etape obligatoire pour utiliser les sessions avec passport.c'est a dire que passport va lire les infos de session et les encoder/decoder
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
